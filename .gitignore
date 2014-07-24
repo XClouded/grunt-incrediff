@@ -5,4 +5,5 @@ src
 .sass-cache
 .node_modules
 .gitignore
-
+.package
+.version
