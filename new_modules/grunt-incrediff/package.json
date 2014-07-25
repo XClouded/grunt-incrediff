@@ -1,0 +1,8 @@
+{
+  "name": "build",
+  "version": "1.0.0",
+  "devDependencies": {
+    "chalk": ">=0.0.0",
+    "maxmin": ">=0.0.0"
+  }
+}

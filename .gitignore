@@ -5,4 +5,5 @@ src
 .gitignore
 .package
 .version
-!/node_modules/grunt-incrediff
+build
+node_nodules
