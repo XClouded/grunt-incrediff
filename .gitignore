@@ -1,9 +1,8 @@
-node_modules
 npm-debug.log
 tmp
 src
 .sass-cache
-.node_modules
 .gitignore
 .package
 .version
+!/node_modules/grunt-incrediff
