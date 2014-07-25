@@ -22,7 +22,7 @@ module.exports = function(grunt) {
         });
 
         var _nVer = options.version[0],
-            _oVer = options.version[1];
+            _oVer = options.version[1] || "";
         var _src = this.files[0].orig.src;
 
         var _new = options.newsrc.replace(/\/$/,'') + '/';
@@ -44,7 +44,7 @@ module.exports = function(grunt) {
             var file = _src[j].replace(/^\//,'');
             var readPath = _new + file;
             //var readPath = _from + _oVer + '/' + file;
-            var writePath = _to + _format.replace('%{FILEPATH}', file).replace('%{OLDVERSION}', '').replace('%{NEWVERSION}', _nVer);
+            var writePath = _to + _format.replace(/\%\{FILEPATH\}/g, file).replace(/\%\{OLDVERSION\}/g, '').replace(/\%\{NEWVERSION\}/g, _nVer);
 
             var content = grunt.file.read(readPath);
             var write = JSON.stringify( content ) + '/*"""*/';
@@ -58,7 +58,7 @@ module.exports = function(grunt) {
             var file = _src[j].replace(/^\//,'');
             var readPath1 = _new + file;
             var readPath2 = _from + _oVer + '/' + file;
-            var writePath = _to + _format.replace('%{FILEPATH}', file).replace('%{OLDVERSION}', _oVer).replace('%{NEWVERSION}', _nVer);
+            var writePath = _to + _format.replace(/\%\{FILEPATH\}/g, file).replace(/\%\{OLDVERSION\}/g, _oVer).replace(/\%\{NEWVERSION\}/g, _nVer);
 
             var oldData = grunt.file.read(readPath2);
             var newData = grunt.file.read(readPath1);
