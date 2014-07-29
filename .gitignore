@@ -6,4 +6,4 @@ src
 .package
 .version
 build
-node_nodules
+node_modules
