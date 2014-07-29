@@ -12,7 +12,7 @@ function Test_1() {
         initLen : 100000,
         partLen : 30,
         partCir : 10,
-        partTime: 100,
+        partTime: 1000,
         chunkSize: 20
     };
     s.push( getRndStr( options.initLen ) );
@@ -21,10 +21,11 @@ function Test_1() {
 
     var d = [];
     //差异数组
+var beginT = new Date();
     for ( var i = 0; i < options.partTime ; i++ ) {
         d.push( JSON.stringify(diff( s[i], s[i+1], options.chunkSize )) );
     }
-
+var endT = new Date();
     var m = [];
     //合并后数据
     m.push( s[0] );
@@ -32,9 +33,14 @@ function Test_1() {
         m.push( mergeDiff( m[i], options.chunkSize, JSON.parse(d[i]) ) );
     }
 
+
+    var result = true;
     for ( var i = 1; i <= options.partTime ; i++ ) {
-        console.log('case ['+i+']  ' + ((s[i].toString()==m[i].toString()) ? 'ok' : 'no'));
+        if ( s[i].toString()!=m[i].toString() )
+            break;
     }
+    console.log('Complete %d/%d',i-1,options.partTime);
+    console.log('Diff %d次 %d\%/per Time: %d ms',options.partTime, options.partLen * options.partCir / options.initLen * 100, endT.getTime()-beginT.getTime())
 }
 
 
