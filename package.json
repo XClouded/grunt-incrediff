@@ -1,5 +1,5 @@
 {
-  "name": "grunt-incrediff",
+  "name": "@ali/grunt-incrediff",
   "version": "1.0.0",
   "dependencies": {
     "async": "^0.6.2",
