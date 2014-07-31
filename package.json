@@ -1,11 +1,14 @@
 {
   "name": "@ali/grunt-incrediff",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "dependencies": {
     "async": "^0.6.2",
     "request": "~2.34.0",
     "chalk": "~0.4.0",
     "maxmin": "0.1.0"
+  },
+  "engines": {
+    "node": ">= 0.8.0"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
@@ -27,5 +30,26 @@
   "bugs": {
     "url": "https://github.com/SenYu/grunt-incrediff/issues"
   },
-  "homepage": "https://github.com/SenYu/grunt-incrediff"
+  "homepage": "https://github.com/SenYu/grunt-incrediff",
+  "_shasum": "089d78cb38386cc60d3c88da0663d2d4da1e4b45",
+  "_from": "grunt-incrediff@>=1.0.0-0 <1.1.0-0",
+  "_npmVersion": "1.4.20",
+  "_npmUser": {
+    "name": "senyu",
+    "email": "senyu@mail.dlut.edu.cn"
+  },
+  "maintainers": [
+    "senyu <senyu@mail.dlut.edu.cn>"
+  ],
+  "dist": {
+    "shasum": "089d78cb38386cc60d3c88da0663d2d4da1e4b45",
+    "size": 5414,
+    "noattachment": false,
+    "key": "grunt-incrediff/-/grunt-incrediff-1.0.0.tgz",
+    "tarball": "http://registry.npm.alibaba-inc.com/grunt-incrediff/download/grunt-incrediff-1.0.0.tgz"
+  },
+  "directories": {},
+  "publish_time": 1406599522285,
+  "_cnpm_publish_time": 1406599522285,
+  "_resolved": "http://registry.npm.alibaba-inc.com/grunt-incrediff/download/grunt-incrediff-1.0.0.tgz"
 }
