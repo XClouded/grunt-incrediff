@@ -47,7 +47,8 @@ function strFormat( source, kvd ) {
             version: [],
             chunkSize: 20,
             isSingleDiff: true,
-            format: '%{FILEPATH}_%{OLDVERSION}' //支持FILEPATH,OLDVERSION,NEWVERSION三个替换
+            sourceFormat:  '%{CDNURL}/%{NEWVERSION}/%{FILEPATH}',
+            format: '%{FILEPATH}_%{OLDVERSION}_%{NEWVERSION}.js' //支持FILEPATH,OLDVERSION,NEWVERSION三个替换
         });
 
         var i, j, len, lenJ;
@@ -62,7 +63,7 @@ function strFormat( source, kvd ) {
 
         options.dest   = options.dest.replace(/\/$/,'') + '/';
         options.newsrc = options.newsrc.replace(/\/$/,'') + '/';
-        options.cdnUrl = options.cdnUrl.replace(/\/$/,'') + '/';
+        options.cdnUrl = options.cdnUrl.replace(/\/$/,'');
 
         if (  options.version.length  < 1 ) {
             grunt.log.warn('Array[Version] must has 2 element AT LEAST');
@@ -97,7 +98,13 @@ function strFormat( source, kvd ) {
             var curVersion = _versions[ i ];
             if ( curVersion !== '' ) {
                 for ( j = 0, lenJ = src.length; j < lenJ ; j++ ) {
-                    var oldUrl = options.cdnUrl + curVersion + '/' + src[ j ];
+                    var oldUrl = strFormat( options.sourceFormat, {
+                            CDNURL  : options.cdnUrl,
+                            FILEPATH: src[ j ],
+                            OLDVERSION: '',
+                            NEWVERSION: curVersion
+                        } );
+                    //options.cdnUrl + curVersion + '/' + src[ j ];
                     reqQueue.push( {url:oldUrl ,name: src[j] + '?' + curVersion} );
                 }
             }

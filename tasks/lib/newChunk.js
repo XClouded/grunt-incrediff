@@ -6,7 +6,7 @@ function ChunkExt(o, n, chunkSize) {
         diffHash = {},    /*在生成diffSequence时辅助记录新增子字符串的hashMap*/
         diffSequence = {'hash':[],'diff':[]},   /*把diffRecord中的连续块合并后存储*/
         i;
-
+    var hashPrefix = '_ChunkHash_';
 
         generateOriginBlock(o, chunkSize, originHash);
       //  console.log(originHash);
@@ -28,8 +28,8 @@ function ChunkExt(o, n, chunkSize) {
         while ( _startPos < len ) {
             _blockStr = o.substr( _startPos, chunkSize );   //取当前文本块
 
-            originHash[ _blockStr ] = originHash[ _blockStr ] || [];    //若该hash不存在则新建数组
-            originHash[ _blockStr ].push( _hashID );                    //把分块标号放进去
+            originHash[ hashPrefix+_blockStr ] = originHash[ hashPrefix+_blockStr ] || [];    //若该hash不存在则新建数组
+            originHash[ hashPrefix+_blockStr ].push( _hashID );                    //把分块标号放进去
 
             _hashID ++ ;
             _startPos += chunkSize; //每次右移一个chunkSize
@@ -47,7 +47,7 @@ function ChunkExt(o, n, chunkSize) {
 
         while ( _startPos < len ) {
             _blockStr = n.substr( _startPos, chunkSize);    //取当前文本块
-            if ( originHash[ _blockStr ] ) {  
+            if ( originHash[ hashPrefix+_blockStr ] ) {  
                 //如果存在hash记录,即该块(99%)不为新增块
                 //先把_addStr的字符串全输出到diffRecord中,然后寻找originHash中对应hashID
                 if ( _addStr.length ) {
@@ -77,7 +77,7 @@ function ChunkExt(o, n, chunkSize) {
     /*寻找最优分块hashID,毕竟不是LCS的O(N^2)复杂度,做不到最优,
     采用这个O(N)的遍历来寻找一个相对最优的*/
     function getCorrectHashID(curStr, priorHashID) {
-        var _curHashs = originHash[ curStr ],
+        var _curHashs = originHash[ hashPrefix+curStr ],
             len = _curHashs.length,
             _curHashID,
             i;
