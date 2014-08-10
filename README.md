@@ -7,7 +7,7 @@ grunt端调用newChunk产生文件间增量更新差异数据
 
 ## 安装
 
-通过内部 npm 安装：
+通过 npm 安装：
 
 `
 $ npm install grunt-incrediff -g
@@ -35,7 +35,7 @@ GruntFiles.js
 > sourceFormat:  '%{CDNURL}/%{NEWVERSION}/%{FILEPATH}',   
 > CDN上原始文件的获取地址
 > 
-> format: '%{FILEPATH}_%{OLDVERSION}_%{NEWVERSION}.js'    
+> format: '%{FILEPATH}\_%{OLDVERSION}\_%{NEWVERSION}.js'    
 > 需要生成在build目录的差异文件的路径
 > 
 > dest: 'build'    
