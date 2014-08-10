@@ -19,31 +19,31 @@ $ npm install grunt-incrediff -g
 GruntFiles.js
 </code>
 
-> version: [],   
-> 指定要生成差异文件的原始文件的版本号,如["1.0.2","1.0.1","1.0.0"]，
-> 
-> chunkSize: 20,   
-> newChunk算法调用时使用的参数，分块大小，建议>=10
-> 
-> isSingleDiff: true,    
-> 若 `isSingleDiff` 为 true ，则
-> 生成 v[1]旧版 和 v[0]新版 的差异文件，否则生成 v[1-end] 和 v[0]新版 的所有差异文件
-> 
-> isHashStr: true,
-> 生成差异信息中，是否压缩重复字符串
-> 
-> sourceFormat:  '%{CDNURL}/%{NEWVERSION}/%{FILEPATH}',   
-> CDN上原始文件的获取地址
-> 
-> format: '%{FILEPATH}\_%{OLDVERSION}\_%{NEWVERSION}.js'    
-> 需要生成在build目录的差异文件的路径
-> 
-> dest: 'build'    
-> 差异文件生成目录
-> 
-> newsrc: 'build'    
-> 新版本文件在之前的grunt构建中的生成目录
-> 
+	version: [],   
+	指定要生成差异文件的原始文件的版本号,如["1.0.2","1.0.1","1.0.0"]，
+	
+	chunkSize: 20,   
+	newChunk算法调用时使用的参数，分块大小，建议>=10
+	
+	isSingleDiff: true,    
+	若 `isSingleDiff` 为 true ，则
+	生成 v[1]旧版 和 v[0]新版 的差异文件，否则生成 v[1-end] 和 v[0]新版 的所有差异文件
+	
+	isHashStr: true,
+	生成差异信息中，是否压缩重复字符串
+	
+	sourceFormat:  '%{CDNURL}/%{NEWVERSION}/%{FILEPATH}',   
+	CDN上原始文件的获取地址
+	
+	format: '%{FILEPATH}\_%{OLDVERSION}\_%{NEWVERSION}.js'    
+	需要生成在build目录的差异文件的路径
+	
+	dest: 'build'    
+	差异文件生成目录
+	
+	newsrc: 'build'    
+	新版本文件在之前的grunt构建中的生成目录
+	
 
 ## 使用
 
