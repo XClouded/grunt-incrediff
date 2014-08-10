@@ -160,7 +160,7 @@ function strFormat( source, kvd ) {
                 NEWVERSION: _versions[0]
             } );
 
-            var content = diff(olddata, newdata, options.chunkSize);
+            var content = diff(olddata, newdata, options.chunkSize, options.isHashStr);
             var writeContent = JSON.stringify( content ) + '/*"""*/';
             grunt.file.write(writePath, writeContent, 'utf8');
             grunt.log.warn('DiffData '+ chalk.cyan(writePath) + ' created: ' + maxmin(newdata, writeContent, false)  );
