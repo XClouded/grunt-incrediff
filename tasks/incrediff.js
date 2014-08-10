@@ -47,6 +47,7 @@ function strFormat( source, kvd ) {
             version: [],
             chunkSize: 20,
             isSingleDiff: true,
+            isHashStr: false,
             sourceFormat:  '%{CDNURL}/%{NEWVERSION}/%{FILEPATH}',
             format: '%{FILEPATH}_%{OLDVERSION}_%{NEWVERSION}.js' //支持FILEPATH,OLDVERSION,NEWVERSION三个替换
         });

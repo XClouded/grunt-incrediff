@@ -1,5 +1,6 @@
 module.exports = ChunkExt;
-function ChunkExt(o, n, chunkSize) {
+ChunkExt.merge = mergeDiff;
+function ChunkExt(o, n, chunkSize, noIndex) {
     var originHash = {},    /*o字符串分块后每块的hash标记，MT使用md5，
                             但javascript的object本身就维护了一个hashmap为啥还用别的散列计算呢。。。*/
         diffRecord = [],    /*记录n字符串相对于o串的差异，按照每个block存储*/
@@ -14,8 +15,10 @@ function ChunkExt(o, n, chunkSize) {
         generateDiffBlock(originHash, n, chunkSize, diffRecord);
       //  console.log(diffRecord);
 
-        concatDiffBlock(diffRecord, diffSequence);
+        concatDiffBlock(diffRecord, diffSequence, noIndex);
       //  console.log(diffSequence);
+
+        diffSequence.chunkSize = chunkSize;
 
         return diffSequence;
     //由o原始字符串生成对应block的hashmap
@@ -108,7 +111,7 @@ function ChunkExt(o, n, chunkSize) {
     }
 
     //把diffHash的相邻块合并
-    function concatDiffBlock(diff, seq) {
+    function concatDiffBlock(diff, seq, noIndex) {
         var len = diff.length,
             d,
             _hashID = 0,
@@ -123,11 +126,18 @@ function ChunkExt(o, n, chunkSize) {
                 if ( _count ) seq.diff.push( [_hashID, _count] );
                 _count = 0;
 
-                if ( typeof diffHash[ d ] === 'undefined') {
-                    diffHash[ d ] = _strHashIDCount++;
-                    seq.hash[ diffHash[ d ] ] = d;
+                if ( noIndex ) {
+                    seq.diff.push( d );
                 }
-                seq.diff.push( [ diffHash[ d ] ] );
+                else {
+                    if ( typeof diffHash[ hashPrefix + d ] === 'undefined') {
+                        diffHash[ hashPrefix + d ] = _strHashIDCount++;
+                        seq.hash[ diffHash[ hashPrefix + d ] ] = d;
+                    }
+                    seq.diff.push( [ diffHash[ hashPrefix + d ] ] );
+                }
+
+
             }
             else {
                 //是否连续,不连续则填回去,初始化_count
@@ -152,10 +162,13 @@ function mergeDiff(o, chunkSize, diff) {
         diffItem,
         retStr = [],
         i;
-
+        chunkSize = diff.chunkSize || chunkSize;
     for ( i = 0 ; i < len ; i++ ) {
         diffItem = diff.diff[i];
-        if ( diffItem.length == 1) {
+        if ( typeof diffItem === 'string' ) {
+            retStr.push( diffItem );
+        }
+        else if ( diffItem.length == 1) {
             retStr.push( hash[ diffItem[ 0 ] ] );
         }
         else {
