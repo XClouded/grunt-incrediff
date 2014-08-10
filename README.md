@@ -1,5 +1,4 @@
 # grunt-incrediff
-nodejs端调用mtop数据接口，走mtop4协议。不需要cookie，域名校验等，直接取mtop接口数据。
 grunt端调用newChunk产生文件间增量更新差异数据
 
 ## 注意
