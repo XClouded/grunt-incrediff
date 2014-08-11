@@ -80,6 +80,6 @@ GruntFiles.js
 
 **合并差异**
 
-	var m = diff.merge(oldS, null /*若d不带chunkSize可以外部输入*/, d)
+	var m = diff.merge(oldS, null /*若d不带chunkSize可以外部输入*/, d) 
 
 
