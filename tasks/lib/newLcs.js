@@ -4,9 +4,9 @@ function lcsDiff(o, n) {
 	var OP_ADD = 1, OP_DEL = 2, OP_MOD = 3, OP_EQUAL = 0;
 
 	var oLen = o.length, nLen = n.length;
-	var id  = String.prototype.charAt;
+	var id   = String.prototype.charAt;
 
-	var dp = init2DArray( oLen+1, nLen+1, true);
+	var dp   = init2DArray( oLen+1, nLen+1, true);
 	//dp 已初始化好
 	var step = init2DArray( oLen+1, nLen+1 );
 
@@ -16,11 +16,11 @@ function lcsDiff(o, n) {
 	for( var j = 0; j <= nLen ; j++ )
 		step[0][ j ] = OP_ADD;
 
-	//动态规划
+	//动态规划 在step中生成路径
 	for ( var i = 1 ; i <= oLen ; i++ ) {
 		for ( var j = 1 ; j <= nLen ; j++ ) {
 			var InEqual = id.call( o, i-1 ) !== id.call( n, j-1 ) ? 1 : 0;
-			var eleArr = [
+			var eleArr  = [
 					dp[ i-1 ][ j ] + 0	,	//删除
 					dp[ i ][ j-1 ] + 1  ,	//新增
 					dp[ i-1 ][ j-1 ] + InEqual    // 0:相同不变, 1:不同修改
@@ -28,175 +28,179 @@ function lcsDiff(o, n) {
 			//路径记录
 			switch( minimum( eleArr ) ) {
 				case 0:
-					dp[i][j] = eleArr[ 0 ];
+					dp[i][j]   = eleArr[ 0 ];
 					step[i][j] = OP_DEL;
 					break;
 				case 1:
-					dp[i][j] = eleArr[ 1 ];
+					dp[i][j]   = eleArr[ 1 ];
 					step[i][j] = OP_ADD;
 					break;
 				case 2:
-					dp[i][j] = eleArr[ 2 ];
+					dp[i][j]   = eleArr[ 2 ];
 					step[i][j] = InEqual ? OP_MOD : OP_EQUAL;
 					break;
 			}
 		}
 	}
 
+
+	//解析路径(跟着走一遍)
 	var infoPaths = buildPaths( oLen, nLen, o, n, step );
+	//转换成差异队列
 	var diffQueue = buildDiff(infoPaths);
 
+	//合并差异队列
 	return concatDiff(diffQueue);
-}
 
-function init2DArray(I, J, dp) {
-	var ret = [];
-	for ( var i = 0 ; i < I; i ++ ) {
-		ret[ i ] = new Array(J);
-		if (dp) ret[ i ][ 0 ] = i;
-	}
-	if (dp) {
-		for ( var j = 0 ; j < J ; j++ ) {
-			ret[ 0 ][ j ] = j;
+	function init2DArray(I, J, dp) {
+		var ret = [];
+		for ( var i = 0 ; i < I; i ++ ) {
+			ret[ i ] = new Array(J);
+			if (dp) ret[ i ][ 0 ] = i;
 		}
-	}
-	return ret;
-}
-
-function minimum(arg) {
-	var min = 0;
-	for ( var i = 0; i < arg.length; i++ ) {
-		if ( arg[i] < arg[ min ] ) min = i;
-	}
-	return min;
-}
-
-function buildPaths(i, j, o, n, step) {
-	var infoQueue = [];
-	var id = String.prototype.charAt;
-	var OP_ADD = 1, OP_DEL = 2, OP_MOD = 3, OP_EQUAL = 0;
-
-	while ( true ) {
-		if ( !i && !j ) break;
-		switch( step[i][j] ) {
-			case OP_MOD:
-				infoQueue.unshift( {
-					type: OP_MOD,
-					data: [ id.call(o, i-1), id.call(n, j-1) ]
-				} )
-				i -= 1; j -= 1;
-				break;
-			case OP_EQUAL:
-				infoQueue.unshift( {
-					type: OP_EQUAL,
-					data: null
-				} )
-				i -= 1; j -= 1;
-				break;
-			case OP_DEL:
-				infoQueue.unshift( {
-					type: OP_DEL,
-					data: [ id.call(o, i-1) ]	//其实并不用关心del哪个元素
-				} )
-				i -= 1;
-				break;
-			case OP_ADD:
-				infoQueue.unshift( {
-					type: OP_ADD,
-					data: [ id.call(n, j-1) ]
-				} )
-				j -= 1;
-				break;
-		}
-	}
-
-	return infoQueue;
-}
-
-function buildDiff(infoPaths) {
-	var originIndex = 0;
-	var diffQueue = [];
-	var OP_ADD = 1, OP_DEL = 2, OP_MOD = 3, OP_EQUAL = 0;
-
-	for ( var i = 0, len = infoPaths.length; i < len ; i ++ ) {
-		var info = infoPaths[ i ];
-
-		switch( info.type ) {
-			case OP_ADD:
-				diffQueue.push( info.data[ 0 ] );
-				break;
-			case OP_DEL:
-				originIndex ++;
-				break;
-			case OP_EQUAL:
-				diffQueue.push( [ originIndex, 1 ] );
-				originIndex ++;
-				break;
-			case OP_MOD:
-				diffQueue.push( info.data[ 1 ] );
-				originIndex ++;
-				break;
-		}
-	}
-
-	return diffQueue;
-}
-
-function concatDiff(diffQueue) {
-	var countIndex = 0;
-	var lastMatchIndex = -2;
-	var matchIndex = 0;
-	var sequence = [];
-	var countChar = 0;
-	var preChar = '';
-
-	for ( var i = 0, len = diffQueue.length; i < len ; i ++ ) {
-		var d = diffQueue[ i ];
-
-		if ( typeof d === 'string' ) {
-			//回填 分块信息
-			if ( countIndex ) {
-				sequence.push( [ matchIndex, countIndex ] );
+		if (dp) {
+			for ( var j = 0 ; j < J ; j++ ) {
+				ret[ 0 ][ j ] = j;
 			}
-			countIndex = 0;
-			
-			//记录字串
-			preChar += d;
-			countChar ++;
-
 		}
-		else {
-			//回填 字串
-			if ( countChar ) {
-				sequence.push( preChar );
-			}
-			preChar = '';
-			countChar = 0;
+		return ret;
+	}
 
-			//记录 分块信息
-			if ( lastMatchIndex + 1 !== d[ 0 ] ) {
+	function minimum(arg) {
+		var min = 0;
+		for ( var i = 0; i < arg.length; i++ ) {
+			if ( arg[i] < arg[ min ] ) min = i;
+		}
+		return min;
+	}
+
+	function buildPaths(i, j, o, n, step) {
+		var infoQueue = [];
+		var id = String.prototype.charAt;
+		var OP_ADD = 1, OP_DEL = 2, OP_MOD = 3, OP_EQUAL = 0;
+
+		while ( true ) {
+			if ( !i && !j ) break;
+			switch( step[i][j] ) {
+				case OP_MOD:
+					infoQueue.unshift( {
+						type: OP_MOD,
+						data: [ id.call(o, i-1), id.call(n, j-1) ]
+					} )
+					i -= 1; j -= 1;
+					break;
+				case OP_EQUAL:
+					infoQueue.unshift( {
+						type: OP_EQUAL,
+						data: null
+					} )
+					i -= 1; j -= 1;
+					break;
+				case OP_DEL:
+					infoQueue.unshift( {
+						type: OP_DEL,
+						data: [ id.call(o, i-1) ]	//其实并不用关心del哪个元素
+					} )
+					i -= 1;
+					break;
+				case OP_ADD:
+					infoQueue.unshift( {
+						type: OP_ADD,
+						data: [ id.call(n, j-1) ]
+					} )
+					j -= 1;
+					break;
+			}
+		}
+
+		return infoQueue;
+	}
+
+	function buildDiff(infoPaths) {
+		var originIndex = 0;
+		var diffQueue = [];
+		var OP_ADD = 1, OP_DEL = 2, OP_MOD = 3, OP_EQUAL = 0;
+
+		for ( var i = 0, len = infoPaths.length; i < len ; i ++ ) {
+			var info = infoPaths[ i ];
+
+			switch( info.type ) {
+				case OP_ADD:
+					diffQueue.push( info.data[ 0 ] );
+					break;
+				case OP_DEL:
+					originIndex ++;
+					break;
+				case OP_EQUAL:
+					diffQueue.push( [ originIndex, 1 ] );
+					originIndex ++;
+					break;
+				case OP_MOD:
+					diffQueue.push( info.data[ 1 ] );
+					originIndex ++;
+					break;
+			}
+		}
+
+		return diffQueue;
+	}
+
+	function concatDiff(diffQueue) {
+		var countIndex     = 0;
+		var lastMatchIndex = -2;
+		var matchIndex     = 0;
+		var sequence       = [];
+		var countChar      = 0;
+		var preChar        = '';
+
+		for ( var i = 0, len = diffQueue.length; i < len ; i ++ ) {
+			var d = diffQueue[ i ];
+
+			if ( typeof d === 'string' ) {
+				//回填 分块信息
 				if ( countIndex ) {
 					sequence.push( [ matchIndex, countIndex ] );
 				}
 				countIndex = 0;
+				
+				//记录字串
+				preChar += d;
+				countChar ++;
 			}
-			if ( !countIndex ) 
-				matchIndex = d[ 0 ];
-			lastMatchIndex = d[ 0 ];
-			countIndex ++;
+			else {
+				//回填 字串
+				if ( countChar ) {
+					sequence.push( preChar );
+				}
+				preChar = '';
+				countChar = 0;
 
+				//记录 分块信息
+				if ( lastMatchIndex + 1 !== d[ 0 ] ) {
+					if ( countIndex ) {
+						sequence.push( [ matchIndex, countIndex ] );
+					}
+					countIndex = 0;
+				}
+				if ( !countIndex ) 
+					matchIndex = d[ 0 ];
+				lastMatchIndex = d[ 0 ];
+				countIndex ++;
+			}
 		}
-	}
-	//回填
-	if ( countIndex ) {
-		sequence.push( [ matchIndex, countIndex ] );
-	}
-	if ( countChar ) {
-		sequence.push( preChar );
-	}
+		//回填
+		if ( countIndex ) {
+			sequence.push( [ matchIndex, countIndex ] );
+		}
+		if ( countChar ) {
+			sequence.push( preChar );
+		}
 
-	return sequence;
+		return sequence;
+	}
 }
+
+
 
 function mergeDiff(o, diff) {
     var len = diff.length,
