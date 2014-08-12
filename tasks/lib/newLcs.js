@@ -7,13 +7,13 @@ function lcsDiff(o, n) {
 	var id   = String.prototype.charAt;
 
 	var dp   = init2DArray( oLen+1, nLen+1, true);
-	//dp 已初始化好
+	//dp 已初始化好，dp需要把 第一行列 初始化好
 	var step = init2DArray( oLen+1, nLen+1 );
 
 	//初始化 step
-	for( var i = 0; i <= oLen ; i++ )
+	for( var i = 1; i <= oLen ; i++ )
 		step[ i ][0] = OP_DEL;
-	for( var j = 0; j <= nLen ; j++ )
+	for( var j = 1; j <= nLen ; j++ )
 		step[0][ j ] = OP_ADD;
 
 	//动态规划 在step中生成路径
@@ -26,17 +26,17 @@ function lcsDiff(o, n) {
 					dp[ i-1 ][ j-1 ] + InEqual    // 0:相同不变, 1:不同修改
 				];
 			//路径记录
-			switch( minimum( eleArr ) ) {
+			switch( minimum( eleArr ) ) {		//在数组中找到最小的元素的序号
 				case 0:
-					dp[i][j]   = eleArr[ 0 ];
+					dp[i][j]   = eleArr[ 0 ];	//删除
 					step[i][j] = OP_DEL;
 					break;
 				case 1:
-					dp[i][j]   = eleArr[ 1 ];
+					dp[i][j]   = eleArr[ 1 ];	//新增
 					step[i][j] = OP_ADD;
 					break;
 				case 2:
-					dp[i][j]   = eleArr[ 2 ];
+					dp[i][j]   = eleArr[ 2 ];	//修改 或 不变
 					step[i][j] = InEqual ? OP_MOD : OP_EQUAL;
 					break;
 			}
@@ -78,6 +78,8 @@ function lcsDiff(o, n) {
 		var infoQueue = [];
 		var id = String.prototype.charAt;
 		var OP_ADD = 1, OP_DEL = 2, OP_MOD = 3, OP_EQUAL = 0;
+
+		//从数组 [oLen][nLen] -> 一直走到 [0][0] break
 
 		while ( true ) {
 			if ( !i && !j ) break;
