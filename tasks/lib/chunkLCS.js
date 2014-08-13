@@ -6,179 +6,179 @@ ChunkLCS.merge = mergeDiff;
 
 'use strict';
 function ChunkLCS(lcsLimit, preStart) {
-	var o, n;
-	var arg = arguments;
+    var o, n;
+    var arg = arguments;
 //console.log('arg',arg)
-	switch( arg.length ) {
-		case 3:
-			o = arg[2][0];
-			n = arg[2][1];
-			break;
-		case 4:
-			o = arg[2];
-			n = arg[3];
-			break;
-	}
+    switch( arg.length ) {
+        case 3:
+            o = arg[2][0];
+            n = arg[2][1];
+            break;
+        case 4:
+            o = arg[2];
+            n = arg[3];
+            break;
+    }
 
-	var oLen = o.length;
-	var nLen = n.length;
+    var oLen = o.length;
+    var nLen = n.length;
 
-	//达到要求使用LCS
-	if ( oLen * nLen <= lcsLimit * lcsLimit ) {
-		return lcsAdapter( o, n, preStart );
-	}
+    //达到要求使用LCS
+    if ( oLen * nLen <= lcsLimit * lcsLimit ) {
+        return lcsAdapter( o, n, preStart );
+    }
 
-	//RSYync分块
-	var chunked = chunkSplit( o, n, preStart );
-	var resultBlock = [];
+    //RSYync分块
+    var chunked = chunkSplit( o, n, preStart );
+    var resultBlock = [];
 
-	//分不了块？
-	if ( chunked.noFound ) {
-		return lcsAdapter( o, n, preStart );
-		//先这么处理，后续考虑全量修改
-	}
-	else {
+    //分不了块？
+    if ( chunked.noFound ) {
+        return lcsAdapter( o, n, preStart );
+        //先这么处理，后续考虑全量修改
+    }
+    else {
 
 //console.log('BLOCK 中间块', chunked.midBlock);
 //console.log('BLOCK 前置块', chunked.preBlock);
 
-		var preBlock = ChunkLCS( lcsLimit, preStart, chunked.preBlock );
-		resultBlock = mergeBlock( resultBlock, preBlock );
+        var preBlock = ChunkLCS( lcsLimit, preStart, chunked.preBlock );
+        resultBlock = mergeBlock( resultBlock, preBlock );
 
-		resultBlock = mergeBlock( resultBlock, [chunked.midBlock] );
+        resultBlock = mergeBlock( resultBlock, [chunked.midBlock] );
 
-		var subStart = chunked.midBlock[ 0 ] + chunked.midBlock[ 1 ];
+        var subStart = chunked.midBlock[ 0 ] + chunked.midBlock[ 1 ];
 
 //console.log('BLOCK 后置块', chunked.preBlock);
 
-		var subBlock = ChunkLCS( lcsLimit, subStart , chunked.subBlock );
-		resultBlock = mergeBlock( resultBlock, subBlock );
-	}
+        var subBlock = ChunkLCS( lcsLimit, subStart , chunked.subBlock );
+        resultBlock = mergeBlock( resultBlock, subBlock );
+    }
 //console.log(resultBlock)
-	return resultBlock;
+    return resultBlock;
 
 }
 
 //统一调用
 function getChunkDiff(o, n, chunkSize) {
-	return chunkFunc( o, n, chunkSize, true ).diff;
+    return chunkFunc( o, n, chunkSize, true ).diff;
 }
 
 function getLcsDiff(o, n) {
-	return lcsFunc( o, n ).diff;
+    return lcsFunc( o, n ).diff;
 }
 
 function chunkSplit(o, n, preStart) {
 
-	var minChunkSize = 12;
+    var minChunkSize = 12;
 
-	var chunkData = getChunkDiff(o, n, minChunkSize);
-	var chunkBlock;
-	var maxChunkLen = -1;
-	var maxChunkIndex = -1;
+    var chunkData = getChunkDiff(o, n, minChunkSize);
+    var chunkBlock;
+    var maxChunkLen = -1;
+    var maxChunkIndex = -1;
 
-	var splitInfo = {};
+    var splitInfo = {};
 
-	//找RSync回来的最长块
-	for ( var i = 0, len = chunkData.length ; i < len ; i ++ ) {
-		chunkBlock = chunkData[ i ];
-		if ( typeof chunkBlock !== 'string' ) {
-			if ( chunkBlock[1] * minChunkSize > maxChunkLen ) {
-				maxChunkLen = chunkBlock[1] * minChunkSize;
-				maxChunkIndex = i;
-			}
-		}
-	}
+    //找RSync回来的最长块
+    for ( var i = 0, len = chunkData.length ; i < len ; i ++ ) {
+        chunkBlock = chunkData[ i ];
+        if ( typeof chunkBlock !== 'string' ) {
+            if ( chunkBlock[1] * minChunkSize > maxChunkLen ) {
+                maxChunkLen = chunkBlock[1] * minChunkSize;
+                maxChunkIndex = i;
+            }
+        }
+    }
 
-	//找不到
-	if ( maxChunkIndex === -1 ) {
+    //找不到
+    if ( maxChunkIndex === -1 ) {
 //console.log('找不到公共块')
-		//console.log(chunkData)
-		splitInfo.noFound = true;
-		//全量？？
-		//理论上 是  公共块 比 minChunkSize 小 ， 会造成这样 ，然后就杂么办？全量吧
-	}
-	else {
-		//前中后 分开
-		var dLen = chunkData[ maxChunkIndex ][ 1 ] * minChunkSize;
+        //console.log(chunkData)
+        splitInfo.noFound = true;
+        //全量？？
+        //理论上 是  公共块 比 minChunkSize 小 ， 会造成这样 ，然后就杂么办？全量吧
+    }
+    else {
+        //前中后 分开
+        var dLen = chunkData[ maxChunkIndex ][ 1 ] * minChunkSize;
 
-		var dStart = chunkData[ maxChunkIndex ][ 0 ] * minChunkSize;
-		var dEnd = dStart + dLen;
+        var dStart = chunkData[ maxChunkIndex ][ 0 ] * minChunkSize;
+        var dEnd = dStart + dLen;
 
-		var dnStart = n.indexOf( o.substring( dStart, dEnd ) );
-		var dnEnd = dnStart + dLen;
+        var dnStart = n.indexOf( o.substring( dStart, dEnd ) );
+        var dnEnd = dnStart + dLen;
 
-		splitInfo.midBlock = [ dStart + preStart, dLen ];
+        splitInfo.midBlock = [ dStart + preStart, dLen ];
 
-		splitInfo.preBlock = [
-			o.substring( 0, dStart ) ,
-			n.substring( 0, dnStart )
-		];
+        splitInfo.preBlock = [
+            o.substring( 0, dStart ) ,
+            n.substring( 0, dnStart )
+        ];
 
-		splitInfo.subBlock = [
-			o.substring( dEnd, o.length ) ,
-			n.substring( dnEnd, n.length )
-		];	
+        splitInfo.subBlock = [
+            o.substring( dEnd, o.length ) ,
+            n.substring( dnEnd, n.length )
+        ];  
 
-		//console.log('pre', splitInfo.preBlock)	
-		//console.log('sub', splitInfo.subBlock)	
-	}
+        //console.log('pre', splitInfo.preBlock)    
+        //console.log('sub', splitInfo.subBlock)    
+    }
 
-	return splitInfo;
+    return splitInfo;
 
 }
 
 
 function lcsAdapter(o, n, preStart) {
-	var lcsDiff = getLcsDiff(o, n);
-	var lcsBlock;
+    var lcsDiff = getLcsDiff(o, n);
+    var lcsBlock;
 
-	for ( var i = 0, len = lcsDiff.length ; i < len ; i ++ ) {
-		lcsBlock = lcsDiff[ i ]
-		if ( typeof lcsBlock !== 'string' ) {
-			lcsBlock[ 0 ] += preStart;
-		}
-	}
+    for ( var i = 0, len = lcsDiff.length ; i < len ; i ++ ) {
+        lcsBlock = lcsDiff[ i ]
+        if ( typeof lcsBlock !== 'string' ) {
+            lcsBlock[ 0 ] += preStart;
+        }
+    }
 //console.log('lcs算法', '旧',o,'新', n, '差异', lcsDiff )
-	return lcsDiff;
+    return lcsDiff;
 }
 
 //把2个差异合并， 考虑队末队首相连
 function mergeBlock(source, addition) {
-	var sLen = source.length;
-	var aLen = addition.length;
+    var sLen = source.length;
+    var aLen = addition.length;
 
 //console.log('合并 source', source)
 //console.log('合并 addition', addition)
 
-	if ( sLen === 0 )
-		return addition;
-	if ( aLen === 0 )
-		return source;
+    if ( sLen === 0 )
+        return addition;
+    if ( aLen === 0 )
+        return source;
 
-	var sLast = source[ sLen-1 ];
-	var aFirst = addition[ 0 ];
+    var sLast = source[ sLen-1 ];
+    var aFirst = addition[ 0 ];
 
-	if ( typeof sLast !== 'string' && typeof aFirst !== 'string' ) {
+    if ( typeof sLast !== 'string' && typeof aFirst !== 'string' ) {
 
-		if ( sLast[ 0 ] + sLast[ 1 ] === aFirst[ 0 ] ) {
+        if ( sLast[ 0 ] + sLast[ 1 ] === aFirst[ 0 ] ) {
 
-			sLast[ 1 ] += aFirst[ 1 ];
-			addition.shift();
+            sLast[ 1 ] += aFirst[ 1 ];
+            addition.shift();
 
-		}
+        }
 
-	}
-	else if ( typeof sLast === 'string' && typeof aFirst === 'string' ) {
+    }
+    else if ( typeof sLast === 'string' && typeof aFirst === 'string' ) {
 
-		sLast += aFirst;
-		addition.shift();
+        sLast += aFirst;
+        addition.shift();
 
-	}
-	
-	source = source.concat( addition )
+    }
+    
+    source = source.concat( addition )
 //console.log('合并 merge', source )
-	return source;
+    return source;
 
 }
 
