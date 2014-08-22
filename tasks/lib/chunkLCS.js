@@ -1,10 +1,15 @@
 var chunkFunc = require('./newChunk');
 var lcsFunc = require('./newLcs');
 
-module.exports = ChunkLCS;
-ChunkLCS.merge = mergeDiff;
+module.exports = algoWrap;
+algoWrap.merge = mergeDiff;
 
 'use strict';
+function algoWrap (o, n) {
+    var ret = ChunkLCS( 100, 0, o, n );
+    return {diff: ret, chunkSize: 1}
+}
+
 function ChunkLCS(lcsLimit, preStart) {
     var o, n;
     var arg = arguments;
@@ -118,10 +123,10 @@ function chunkSplit(o, n, preStart) {
         splitInfo.subBlock = [
             o.substring( dEnd, o.length ) ,
             n.substring( dnEnd, n.length )
-        ];  
+        ];
 
-        //console.log('pre', splitInfo.preBlock)    
-        //console.log('sub', splitInfo.subBlock)    
+        //console.log('pre', splitInfo.preBlock)
+        //console.log('sub', splitInfo.subBlock)
     }
 
     return splitInfo;
@@ -134,7 +139,7 @@ function lcsAdapter(o, n, preStart) {
     var lcsBlock;
 
     for ( var i = 0, len = lcsDiff.length ; i < len ; i ++ ) {
-        lcsBlock = lcsDiff[ i ]
+        lcsBlock = lcsDiff[ i ];
         if ( typeof lcsBlock !== 'string' ) {
             lcsBlock[ 0 ] += preStart;
         }
@@ -175,26 +180,26 @@ function mergeBlock(source, addition) {
         addition.shift();
 
     }
-    
-    source = source.concat( addition )
+
+    source = source.concat( addition );
 //console.log('合并 merge', source )
     return source;
 
 }
 
 
-function mergeDiff(o, diff) {
-    var len = diff.length,
+function mergeDiff(o, chunkSize,  diff) {
+    var len = diff.diff.length,
         diffItem,
         retStr = [],
         i;
-        chunkSize = 1;
+    chunkSize = 1;
     for ( i = 0 ; i < len ; i++ ) {
-        diffItem = diff[i];
+        diffItem = diff.diff[i];
         if ( typeof diffItem === 'string' ) {
             retStr.push( diffItem );
         }
-        else if ( diffItem.length == 1) {
+        else if ( diffItem.length === 1) {
             retStr.push( hash[ diffItem[ 0 ] ] );
         }
         else {
@@ -204,17 +209,17 @@ function mergeDiff(o, diff) {
     return retStr.join('');
 }
 
-/*var fs = require( 'fs' )
-var origin = fs.readFileSync('app_all.41.js','utf8')
-var newstr = fs.readFileSync('app_all.51.js','utf8')
+// var fs = require( 'fs' )
+// var origin = fs.readFileSync('app_all.min.1.3.61.css','utf8')
+// var newstr = fs.readFileSync('app_all.min.1.3.7.css','utf8')
 
-// var origin = "123456789";
-// var newstr = "3xad567890";
+// // var origin = "123456789";
+// // var newstr = "3xad567890";
 
-var bt = (new Date()).getTime();
-var result = ChunkLCS( 100, 0, origin, newstr )
-var et = (new Date()).getTime();
+// var bt = (new Date()).getTime();
+// var result =algoWrap( origin, newstr )
+// var et = (new Date()).getTime();
 
-console.log(et-bt, JSON.stringify(result).length)
-console.log( newstr=== mergeDiff(origin,result) )
-*/
+// console.log(et-bt, JSON.stringify(result).length)
+// console.log( newstr=== mergeDiff(origin,result) )
+

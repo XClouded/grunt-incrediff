@@ -50,7 +50,7 @@ function lcsDiff(o, n) {
     var diffQueue = buildDiff(infoPaths);
 
     //合并差异队列
-    return { diff: concatDiff(diffQueue) };
+    return { diff: concatDiff(diffQueue), chunkSize: 1 };
 
     
     function init2DArray(I, J, dp) {

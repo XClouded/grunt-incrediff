@@ -41,9 +41,15 @@ GruntFiles.js
 	dest: 'build'    
 	差异文件生成目录
 	
+	algorithm: 'chunk'    
+	枚举类型 'chunk' / 'chunklcs'，两种差分算法
+	
 	newsrc: 'build'    
 	新版本文件在之前的grunt构建中的生成目录
 	
+## 注意
+	增加差异输出强校验，会对差异进行一次合并测试，如果合并测试失败gruntfail(如果算法某些点没测试到可能报错)
+
 
 ## 使用
 
@@ -58,6 +64,7 @@ GruntFiles.js
                     sourceFormat: '%{CDNURL}/%{NEWVERSION}/%{FILEPATH}',
                     format: '%{FILEPATH}_%{OLDVERSION}_%{NEWVERSION}.js',
                     newsrc: 'build',
+                    algorithm: 'chunk',
 					cdnUrl: 'http://cdnurl/pathprefix/',
                 },
             files: {

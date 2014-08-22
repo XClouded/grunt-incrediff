@@ -48,6 +48,7 @@ function strFormat( source, kvd ) {
             chunkSize: 20,
             isSingleDiff: true,
             isHashStr: false,
+            algorithm: 'chunk',
             sourceFormat:  '%{CDNURL}/%{NEWVERSION}/%{FILEPATH}',
             format: '%{FILEPATH}_%{OLDVERSION}_%{NEWVERSION}.js' //支持FILEPATH,OLDVERSION,NEWVERSION三个替换
         });
@@ -57,6 +58,17 @@ function strFormat( source, kvd ) {
         var src;
         var newContent;
         var done;
+
+        //选择差分算法
+        switch(options.algorithm.toLowerCase()) {
+            case 'chunk':
+                diff = require('./lib/newChunk');
+                break;
+            case 'chunklcs':
+                diff = require('./lib/chunkLCS');
+                break;
+        }
+
         if ( !options.dest || !options.newsrc || !options.cdnUrl ){
             grunt.log.warn('config need [DEST],[NEWSRC],[CDNURL]');
             return;
@@ -127,7 +139,7 @@ function strFormat( source, kvd ) {
             }, 
             //操作结束 (均完成或有一失败),执行下面的,开始生成
             function (err) {
-                if (err) {    
+                if (err) {
                     grunt.log.writeln(chalk.red('ERROR 404: ')+chalk.yellow('Please Validate ths Configuration of CDN-URL or File Path'));
                     grunt.fail.fatal(err);
                 }
@@ -137,7 +149,7 @@ function strFormat( source, kvd ) {
                 //TODO, 开始产生差分数据
                 for ( i = 1, len = _versions.length; i < len ; i ++) {
                     var curVersion = _versions[ i ];
-                    
+
                     for ( j = 0, lenJ = src.length ; j < lenJ ; j ++) {
                         if ( curVersion === '' ) {
                             generateFullData( newContent[ j ], src[ j ] );
@@ -161,6 +173,9 @@ function strFormat( source, kvd ) {
             } );
 
             var content = diff(olddata, newdata, options.chunkSize, options.isHashStr);
+            if ( diff.merge(olddata, options.chunkSize, content) !== newdata ) {
+                grunt.log.error('Diff Building ERROR: ' + path + ' ' + oldver +'->' + _versions[0]);
+            }
             var writeContent = JSON.stringify( content ) + '/*"""*/';
             grunt.file.write(writePath, writeContent, 'utf8');
             grunt.log.warn('DiffData '+ chalk.cyan(writePath) + ' created: ' + maxmin(newdata, writeContent, false)  );
