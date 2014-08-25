@@ -7,49 +7,75 @@
  */
 
 'use strict';
+    /* http请求，下载历史版本文件 */
 var request = require('request'),
     async = require('async'),
+    /* 显示差异文件大小 */
     maxmin = require('maxmin'),
     chalk = require('chalk'),
+    /* 差异算法库 */
     diff = require('./lib/newChunk');
 
 module.exports = function(grunt) {
 
-function responseHandler(dest, done, container, _name, url, cnt, all) {
-      return function (error, response, body) {
-            response = response || { statusCode: 0 };
+    /**
+     * @description http响应的回调，为了获取dest, done, container, _name, url, cnt, all，而产生的闭包，如果直接写在里面太繁琐了
+     * @param {object} done async异步回调对象
+     * @param {object} container 统一存储下载下来的字符串
+     * @param {string} _name 存储的名称
+     * @param {string} url 下载路径，显示用
+     * @param {string} cnt 下载顺序，显示用
+     * @param {string} all 下载总数，显示用
+     * @return {Function} 返回闭包函数
+     */
+    function responseHandler(dest, done, container, _name, url, cnt, all) {
+          return function (error, response, body) {
+                response = response || { statusCode: 0 };
 
-            if (error) {
-                return done(error);
-            } else if ( (response.statusCode < 200 || response.statusCode > 399)) {
-                grunt.log.warn( 'Download ' + chalk.grey(url) + chalk.red(' Failed ' + response.statusCode));
-                return done(response.statusCode);
-            }
+                if (error) {
+                    return done(error);
+                } else if ( (response.statusCode < 200 || response.statusCode > 399)) {
+                    grunt.log.warn( 'Download ' + chalk.grey(url) + chalk.red(' Failed ' + response.statusCode));
+                    return done(response.statusCode);
+                }
 
-            container[ _name ] = body;
-            grunt.log.warn( 'Download ' + chalk.grey(url) + chalk.green(' success ') + (++cnt.cnt + '/' + all) );
-            done();
-      };
-}
-
-function strFormat( source, kvd ) {
-    if ( typeof source !== 'string' ) { return ''; }
-    for ( var key in kvd ) {
-        if ( kvd.hasOwnProperty( key ) ) {
-            source = source.replace( new RegExp('%{'+ key +'}','g') , kvd[ key ] );
-        }
+                container[ _name ] = body;
+                grunt.log.warn( 'Download ' + chalk.grey(url) + chalk.green(' success ') + (++cnt.cnt + '/' + all) );
+                done();
+          };
     }
-    return source;
-}
+
+    /**
+     * @description 字符串处理格式化，按照指定的  %{XXX} 进行替换
+     * @param {string} source 源格式串
+     * @param {object} kvd 替换数据
+     * @return {string} 结果字串
+     */
+    function strFormat( source, kvd ) {
+        if ( typeof source !== 'string' ) { return ''; }
+        for ( var key in kvd ) {
+            if ( kvd.hasOwnProperty( key ) ) {
+                source = source.replace( new RegExp('%{'+ key +'}','g') , kvd[ key ] );
+            }
+        }
+        return source;
+    }
 
     grunt.registerMultiTask('incrediff', 'auto-generate tool of incremental difference of static files', function() {
         var options = this.options({
+            /* v[0] 为最新版本,v[1]为次新版本,之后类推 */
             version: [],
+            /* 默认差异分块大小,如果diff中指定则使用diff中的 */
             chunkSize: 20,
+            /* TRUE时只生成v[1]->v[0]的差异， FALSE生成v[>=1]->v[0]的差异 */
             isSingleDiff: true,
+            /* 是否对公共str采取hash存储,建议FALSE */
             isHashStr: false,
+            /* 算法,可选'chunk','chunklcs' */
             algorithm: 'chunk',
-            sourceFormat:  '%{CDNURL}/%{NEWVERSION}/%{FILEPATH}',
+            /* 从CDN上获取的旧版本文件的url格式 */
+            sourceFormat:  '%{CDNURL}/%{OLDVERSION}/%{FILEPATH}',
+            /* 产生新的差异的路径格式，前面默认会有CDN// */
             format: '%{FILEPATH}_%{OLDVERSION}_%{NEWVERSION}.js' //支持FILEPATH,OLDVERSION,NEWVERSION三个替换
         });
 
@@ -74,6 +100,7 @@ function strFormat( source, kvd ) {
             return;
         }
 
+        /* 各种路径后缀修正 */
         options.dest   = options.dest.replace(/\/$/,'') + '/';
         options.newsrc = options.newsrc.replace(/\/$/,'') + '/';
         options.cdnUrl = options.cdnUrl.replace(/\/$/,'');
@@ -83,12 +110,15 @@ function strFormat( source, kvd ) {
             return;
         }
 
+        /* 设置需要差生差异的各版本 */
         _versions = options.isSingleDiff ? [ options.version[ 0 ], options.version[ 1 ] || undefined ] : options.version;
-            if ( typeof _versions[ _versions.length -1 ] === 'undefined' ) {
-                _versions.pop();
-            }
-            _versions = _versions.concat( [''] );
-        //需要生成差异的版本数组,最后有一个 ''元素
+        /* 如果options.versions中只写了1个元素(最新)，会进入这里,自动填充一个空元素 */
+        if ( typeof _versions[ _versions.length -1 ] === 'undefined' ) {
+            _versions.pop();
+        }
+        _versions = _versions.concat( [''] );
+
+        /* 需要产生差异的src源文件数组,去掉开头的斜杠 */
         src = this.files[0].orig.src;
         src = src.map(function (data) {
             return data.replace(/^\//,'');
@@ -107,15 +137,17 @@ function strFormat( source, kvd ) {
 
         //生成request请求的url队列
         var reqQueue = [];
+        /* 对每个列出的非最新版本 for-i */
         for ( i = 1, len = _versions.length; i < len ; i ++) {
             var curVersion = _versions[ i ];
             if ( curVersion !== '' ) {
+                /* 对每个src源数据 */
                 for ( j = 0, lenJ = src.length; j < lenJ ; j++ ) {
                     var oldUrl = strFormat( options.sourceFormat, {
                             CDNURL  : options.cdnUrl,
                             FILEPATH: src[ j ],
-                            OLDVERSION: '',
-                            NEWVERSION: curVersion
+                            OLDVERSION: curVersion,
+                            NEWVERSION: _versions[0]
                         } );
                     //options.cdnUrl + curVersion + '/' + src[ j ];
                     reqQueue.push( {url:oldUrl ,name: src[j] + '?' + curVersion} );
@@ -126,7 +158,7 @@ function strFormat( source, kvd ) {
         //请求回来的内容给reqContent,全部请求完成后执行 resolve
         var reqContent = {};
         var _count = {cnt:0};
-        async.each(reqQueue, 
+        async.each(reqQueue,
             function (file, next) {
                  var r, callback;
                  var url = file.url,
@@ -152,10 +184,11 @@ function strFormat( source, kvd ) {
 
                     for ( j = 0, lenJ = src.length ; j < lenJ ; j ++) {
                         if ( curVersion === '' ) {
+                            /* 全量数据 */
                             generateFullData( newContent[ j ], src[ j ] );
                         }
                         else {
-                            //Http下载
+                            /* 差异数据 */
                             var oldContent = reqContent[ src[ j ] + '?' + curVersion ];
                             generateDiffData( newContent[ j ], oldContent, curVersion, src[ j ] );
                         }
@@ -174,7 +207,7 @@ function strFormat( source, kvd ) {
 
             var content = diff(olddata, newdata, options.chunkSize, options.isHashStr);
             if ( diff.merge(olddata, options.chunkSize, content) !== newdata ) {
-                grunt.log.error('Diff Building ERROR: ' + path + ' ' + oldver +'->' + _versions[0]);
+                grunt.log.error('差异数据计算出错,可能是算法有问题,请修改algorithm配置项: ' + path + ' ' + oldver +'->' + _versions[0]);
             }
             var writeContent = JSON.stringify( content ) + '/*"""*/';
             grunt.file.write(writePath, writeContent, 'utf8');
