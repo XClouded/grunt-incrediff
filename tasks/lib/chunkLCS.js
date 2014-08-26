@@ -7,7 +7,10 @@ algoWrap.merge = mergeDiff;
 'use strict';
 function algoWrap (o, n) {
     var ret = ChunkLCS( 100, 0, o, n );
-    return {diff: ret, chunkSize: 1}
+    var diffSequence = {'hash':[],'diff':[], chunkSize: 1};
+    ret = miniLcsBlock(ret, o);
+    concatDiffBlock(ret, diffSequence, true);
+    return diffSequence;
 }
 
 function ChunkLCS(lcsLimit, preStart) {
@@ -187,6 +190,46 @@ function mergeBlock(source, addition) {
 
 }
 
+//把lcs之后长度小于4的块都处理成字符
+function miniLcsBlock(diff, o) {
+    var newDiff = [];
+    var i, len, d;
+    for( i=0, len=diff.length; i<len; i++ ) {
+        d = diff[i];
+        if ( typeof d === 'string' ) {
+            newDiff.push( d );
+        }
+        else if ( d.length === 2 && d[1] <= 8 ) {
+            newDiff.push( o.substr(d[0], d[1]) );
+        }
+        else {
+            newDiff.push( d );
+        }
+    }
+    return newDiff;
+}
+//把diffHash的相邻块合并
+function concatDiffBlock(diff, seq, noIndex) {
+    var len = diff.length,
+        d,
+        preStr = '',
+        i;
+    for ( i = 0 ; i < len ; i ++) {
+        d = diff[i];
+        if ( typeof d === 'string') {
+            preStr += d;
+        }
+        else {
+            if ( preStr.length ) {
+                seq.diff.push( preStr );
+                preStr = '';
+            }
+            seq.diff.push( d );
+        }
+    }
+
+}
+
 
 function mergeDiff(o, chunkSize,  diff) {
     var len = diff.diff.length,
@@ -221,5 +264,5 @@ function mergeDiff(o, chunkSize,  diff) {
 // var et = (new Date()).getTime();
 
 // console.log(et-bt, JSON.stringify(result).length)
-// console.log( newstr=== mergeDiff(origin,result) )
+// console.log( newstr=== mergeDiff(origin,1,result) )
 
