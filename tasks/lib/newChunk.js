@@ -21,10 +21,17 @@ function ChunkExt(o, n, chunkSize, noIndex) {
         diffSequence.chunkSize = chunkSize;
 
         return diffSequence;
+
     //由o原始字符串生成对应block的hashmap
+    /**
+     * @description 由o原始字符串按照chunkSize分块大小生成对应块的hashmap，用来标记块是否存在
+     * @param {string} o 原始字符串
+     * @param {number} chunkSize 分块大小
+     * @param {object} originHash hashmap记录
+     */
     function generateOriginBlock(o, chunkSize, originHash) {
         var _hashID = 0,     //分块标号
-            _startPos = 0,  //每块起始position      
+            _startPos = 0,  //每块起始position
             _blockStr,
             len = o.length;
 
@@ -40,6 +47,13 @@ function ChunkExt(o, n, chunkSize, noIndex) {
     }
 
     //产生差异diff,按block分隔
+    /**
+     * @description 对n按照rsync的思想进行滑动块查询，如果在originHash中查询到了就是未被修改，没查询到就当做新增一个字节然后继续，把生成的差异数据存入diffRecord
+     * @param {object} originHash hashmap记录
+     * @param {string} n 目标新字符串
+     * @param {number} chunkSize 分块大小
+     * @param {object} diffRecord 差异数据
+     */
     function generateDiffBlock(originHash, n, chunkSize, diffRecord) {
         var _hashID,
             _startPos = 0,
@@ -50,7 +64,7 @@ function ChunkExt(o, n, chunkSize, noIndex) {
 
         while ( _startPos < len ) {
             _blockStr = n.substr( _startPos, chunkSize);    //取当前文本块
-            if ( originHash[ hashPrefix+_blockStr ] ) {  
+            if ( originHash[ hashPrefix+_blockStr ] ) {
                 //如果存在hash记录,即该块(99%)不为新增块
                 //先把_addStr的字符串全输出到diffRecord中,然后寻找originHash中对应hashID
                 if ( _addStr.length ) {
