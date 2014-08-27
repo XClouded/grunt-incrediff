@@ -48,10 +48,11 @@ GruntFiles.js
 	差异文件生成目录
 	
 	algorithm: 'chunk'    
-	枚举类型 `chunk` / `chunklcs`，两种差分算法
+	枚举类型 `chunk` / `chunklcs`/`auto`，两种差分算法
 	  `chunk`: 时间复杂度低,当差异巨大,(如两个完全不同的文件时),此算法速度较快,但差异文件较大
-	  `chunklcs`: 时间复杂度略高,当差异巨大时,速度较慢,300K的文件间比较能跑5s左右,但在差异小时数据量很小,大约是 `chunk` 算法的 60% 左右
-	
+	  `chunklcs`: 时间复杂度略高,当差异巨大时,速度较慢,300K的文件间比较能跑5s左右,但在差异小时数据量很小,大约是 `chunk` 算法的 80% 左右
+	  `auto`: 自动选择两者之间 数据量小的那个
+
 	newsrc: 'build'    
 	新版本文件在之前的grunt构建中的生成目录
 
@@ -72,7 +73,7 @@ GruntFiles.js
 			                sourceFormat: '%{CDNURL}/%{OLDVERSION}/%{FILEPATH}',
 			                format: '%{FILEPATH}_%{OLDVERSION}_%{NEWVERSION}.js',
 			                newsrc: 'build',
-			                algorithm: 'chunk',
+			                algorithm: 'auto',
 							cdnUrl: 'http://cdnurl/pathprefix/',
 			            },
 			        files: {
@@ -82,7 +83,7 @@ GruntFiles.js
 			    }
 		});
 
-2. 如果将 `version: ["1.0.1","1.0.0"]`变量单独放在其他文件中，请主动修改
+2. **如果将 `version: ["1.0.1","1.0.0"]`变量单独放在其他文件中，请主动修改**
 3. 本地执行 `grunt incrediff` / 服务端自动 `grunt` 时会生成到指定目录
 4. **增加差异输出强校验，会对差异进行一次合并测试，如果合并测试失败则grunt会fail(如果算法某些点没测试到可能报错)**
 
@@ -97,7 +98,7 @@ GruntFiles.js
 > 
 > **生成差异**
 > 
-> 	var d = diff(oldS, newS, 8 /*chunkSize 分块大小*/, true /*是否不压缩字符串*/);
+> 	var d = diff(oldS, newS, 2, true /*是否不压缩字符串*/);
 > 
 > **合并差异**
 > 
@@ -170,7 +171,7 @@ GruntFiles.js
 
 
 **generateDiffData**  
-> 根据输入新旧数据源计算差异，并存储到指定位置
+> 根据输入新旧数据源计算差异，并存储到指定位置，如果algorithm === 'auto' 则会调用两个方法分别运算选取数据量小的那个
 
 - *入参*
 	- {string} newdata 新数据源
@@ -219,7 +220,8 @@ GruntFiles.js
 	- *无*
 
 **generateOriginBlock**  
-> 对n按照rsync的思想进行滑动块查询，如果在originHash中查询到了就是未被修改，没查询到就当做新增一个字节然后继续，把生成的差异数据存入diffRecord
+> 对n按照rsync的思想进行滑动块查询，如果在originHash中查询到了就是未被修改，没查询到就当做新增一个字节然后继续，把生成的差异数据存入diffRecord  
+> **可以参照 rsync算法描述**
 
 - *入参*
 	- {object} originHash hashmap记录
@@ -228,3 +230,149 @@ GruntFiles.js
 	- {object} diffRecord 差异数据
 - *返回*
 	- *无*
+
+**getCorrectHashID**  
+> 寻找最优分块hashID,由于复杂度原因，不可能做到绝对最优，采用这个O(N)的遍历来寻找一个相对最优的，找一个距离上次正确匹配最相近的匹配块
+
+- *入参*
+	- {string} curStr 需要查找的块
+	- {number} priorHashID 最近一次成功匹配
+- *返回*
+	- {number} 返回最优匹配块号
+
+**concatDiffBlock**  
+> 把相邻的 数组标记块 或者 相邻的字符 连接起来，节省空间
+
+- *入参*
+	- {object} diff 差异数组，[[0,1],[1,1],'2','3']
+	- {object} seq 连接之后存储在这里,会被处理成 [[0,2], '23']
+	- {boolean} noIndex TRUE时不适用hash存储字符串，FALSE时使用
+- *返回*
+	- *无*
+
+#### 执行逻辑
+
+-	`generateOriginBlock` 计算源数据分块哈希映射
+-	`generateDiffBlock` 根据源哈希映射 和 新数据 计算差异
+	-	`getCorrectHashID` 计算寻找较优匹配
+-	`concatDiffBlock` 把差异中满足一定条件的相邻块合并
+
+### lib/newLcs DOC
+
+#### 调用方法
+
+**lcsDiff**
+>  时间、空间复杂度均为O(N^2)，在 dp 中存储编辑距离， 在 step 中存储具体路径，然后进行一些处理把差异规则化
+
+- *入参*
+	- {string} o 源字符串
+	- {string} n 新字符串
+- *返回*
+	- {object} 差异数据对象
+
+**buildPaths**
+>  由于路径是逆序记录在二维数组中的，需要重新遍历路径才能得到一维的编辑路径
+
+- *入参*
+	- {number} i 数组一维大小，源字符串长度
+	- {number} j 数组二维大小，新字符串长度
+	- {string} o 源字符串
+	- {string} n 新字符串
+	- {object} step 路径二维数组
+- *返回*
+	- {array} infoQueue 路径一维数据，MOD/EQUAL/DEL/ADD
+
+**buildDiff**
+>  处理之前构造的一维路径数组,把MOD/EUQALL/DEL/ADD,转换成 和newChunk一样的形式
+
+- *入参*
+	- {array} infoPaths 构造的一维路径数组
+- *返回*
+	- {array} diffQueue 基本差异数组,还没有优化过
+
+**concatDiff**
+>  把生成的差异数组中符合一定条件的相邻项进行合并,同newChunk中的concatDiffBlock,合并相邻 数组或相邻字符
+
+- *入参*
+	- {array} diffQueue 基本差异数组,还没有优化过
+- *返回*
+	- {array} sequence 优化完成的数组
+
+#### 执行逻辑
+
+-	`lcsDiff` 先跑动态规划,把编辑距离路径记录的二维数组跑出来
+	-	`buildPaths` 根据二维路径生成一维最短编辑路径,二维包好了所有编辑路径,不论好坏,生成的一维是最优解
+	-	`buildDiff` 把之前的一维路径的结果(MOD/EUQALL/DEL/ADD)处理成仅由 源字符串o.substr 和 新字符串 拼接就能构成的[[0,2], '23']如此的数组形式
+	-	`concatDiff` 优化,拼接差异数组中满足某些特定条件的相邻项(数组相邻 或 都是字符串)
+
+### lib/chunkLcs DOC
+
+#### 调用方法
+
+**algoWrap**
+>  对外调用做的一个包裹函数,添加了 diff, chunkSize 等通用属性(后来做了点数组优化,增加一个合并小块的过程)
+
+- *入参*
+	- {string} o 源字符串
+	- {string} n 新字符串
+- *返回*
+	- {object} 差异数据对象
+
+**ChunkLCS**
+>  递归调用的主函数,进入后,先试用chunk算法分出 最(较大,非绝对最大)大公共字串,及其前缀和后缀,然后对其前缀和后缀字符串递归调用该函数
+
+- *入参*
+	- {number} lcsLimit 执行lcs算法的阀值
+	- {number} preStart 递归调用时指明后缀的开始位置
+	- {object} arguments[2] 分情况，1个的话 是 chunkSplit生成的对象，2个的话是2个一旧一新的字符串
+- *返回*
+	- {object} 指定块的差异数据对象
+
+**chunkSplit**
+>  对指定的 源数据块o，和 新数据块n，执行最(较)大公共块计算,并返回含有前缀,公共,后缀信息的对象
+
+- *入参*
+	- {string} o 源数据'块'
+	- {string} n 新数据'块'
+	- {number} preStart 递归调用时指明后缀的开始位置
+- *返回*
+	- {object} splitInfo 分隔之后的信息
+
+**lcsAdapter**
+>  lcs算法适配器，需要适配 preStart的预制数，必须加上，否则会错乱
+
+- *入参*
+	- {string} o 源数据'块'
+	- {string} n 新数据'块'
+	- {number} preStart 递归调用时指明后缀的开始位置
+- *返回*
+	- {object} lcsDiff 经过preStart修正的 差异数据
+
+**mergeBlock**
+>  由于chunkSplit进行了前中后的拆分，这是重新组装的函数，并且要考虑两个差分数组拼接时连接处是否可以合并的问题
+
+- *入参*
+	- {object} source 被组装的前面部分
+	- {object} addition 被组装的后面部分
+- *返回*
+	- {object} source 组装好的结果
+
+**miniLcsBlock**
+>  后期发现的一个问题, 本算法能精确到字节级别,那么即chunkSize分块大小===1,所以后期会出现好多[123123,1],这代表了源字符串的一个字符，却要占用10个左右的字节进行表示，对这种情况，直接插入字符，节省差异数据
+
+- *入参*
+	- {object} diff 差异对象
+	- {string} o 源字符串，从中取需要的
+- *返回*
+	- {object} newDiff 新差异对象，优化之后的
+
+#### 执行逻辑
+
+-	`algoWrap` 计算差异
+	-	最初调用 `ChunkLCS` ,初始化参数 `ChunkLCS( 100, 0, o, n )`
+		-	若满足 lcsLimit 条件,调用 `lcsAdapter` 计算差异并返回
+		-	若不满足
+			-	调用 `chunkSplit` 寻找 最(较)大公共字符串, 并对其前缀和后缀分别 递归调用 `ChunkLCS` 计算差异
+			-	对计算完成的 前缀和后缀 调用 `mergeBlock` 合并差异
+	-	得到完整差异后, 调用 `miniLcsBlock` 进行数据优化合并
+

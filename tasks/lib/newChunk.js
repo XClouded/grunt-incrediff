@@ -93,6 +93,12 @@ function ChunkExt(o, n, chunkSize, noIndex) {
 
     /*寻找最优分块hashID,毕竟不是LCS的O(N^2)复杂度,做不到最优,
     采用这个O(N)的遍历来寻找一个相对最优的*/
+    /**
+     * @description 寻找最优分块hashID,由于复杂度原因，不可能做到绝对最优，采用这个O(N)的遍历来寻找一个相对最优的，找一个距离上次正确匹配最相近的匹配块
+     * @param {string} curStr 需要查找的块
+     * @param {number} priorHashID 最近一次成功匹配
+     * @return {number} 返回最优匹配块号
+     */
     function getCorrectHashID(curStr, priorHashID) {
         var _curHashs = originHash[ hashPrefix+curStr ],
             len = _curHashs.length,
@@ -125,6 +131,12 @@ function ChunkExt(o, n, chunkSize, noIndex) {
     }
 
     //把diffHash的相邻块合并
+    /**
+     * @description 把相邻的 数组标记块 或者 相邻的字符 连接起来，节省空间
+     * @param {object} diff 差异数组，[[0,1],[1,1],'2','3']
+     * @param {object} seq 连接之后存储在这里,会被处理成 [[0,2], '23']
+     * @param {boolean} noIndex TRUE时不适用hash存储字符串，FALSE时使用
+     */
     function concatDiffBlock(diff, seq, noIndex) {
         var len = diff.length,
             d,

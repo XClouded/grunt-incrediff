@@ -1,6 +1,12 @@
 module.exports = lcsDiff;
 lcsDiff.merge = mergeDiff;
 function lcsDiff(o, n) {
+    /**
+     * @description 时间、空间复杂度均为O(N^2)，在 dp 中存储编辑距离， 在 step 中存储具体路径，然后进行一些处理把差异规则化
+     * @param {string} o 源字符串
+     * @param {string} n 新字符串
+     * @return {object} 差异数据对象
+     */
     var OP_ADD = 1, OP_DEL = 2, OP_MOD = 3, OP_EQUAL = 0;
 
     var oLen = o.length, nLen = n.length;
@@ -52,7 +58,13 @@ function lcsDiff(o, n) {
     //合并差异队列
     return { diff: concatDiff(diffQueue), chunkSize: 1 };
 
-    
+    /**
+     * @description 进行动态规划时的 数组初始化
+     * @param {number} I 数组一维大小，源字符串长度
+     * @param {number} J 数组二维大小，新字符串长度
+     * @param {boolean} dp TRUE: 还要额外执行数据初始化，FALSE: 只建立二维数组
+     * @return {array} ret 动态规划数组
+     */
     function init2DArray(I, J, dp) {
         var ret = [];
         for ( var i = 0 ; i < I; i ++ ) {
@@ -67,6 +79,11 @@ function lcsDiff(o, n) {
         return ret;
     }
 
+    /**
+     * @description 寻找arg这个数组中最小的那个
+     * @param {array} arg 被查询的数组
+     * @return {number} 最小元素的index
+     */
     function minimum(arg) {
         var min = 0;
         for ( var i = 0; i < arg.length; i++ ) {
@@ -75,6 +92,15 @@ function lcsDiff(o, n) {
         return min;
     }
 
+    /**
+     * @description 由于路径是逆序记录在二维数组中的，需要重新遍历路径才能得到一维的编辑路径
+     * @param {number} i 数组一维大小，源字符串长度
+     * @param {number} j 数组二维大小，新字符串长度
+     * @param {string} o 源字符串
+     * @param {string} n 新字符串
+     * @param {object} step 路径二维数组
+     * @return {array} infoQueue 路径一维数据，MOD/EQUAL/DEL/ADD
+     */
     function buildPaths(i, j, o, n, step) {
         var infoQueue = [];
         var id = String.prototype.charAt;
@@ -119,6 +145,11 @@ function lcsDiff(o, n) {
         return infoQueue;
     }
 
+    /**
+     * @description 处理之前构造的一维路径数组,把MOD/EUQALL/DEL/ADD,转换成 和newChunk一样的形式
+     * @param {array} infoPaths 构造的一维路径数组
+     * @return {array} diffQueue 基本差异数组,还没有优化过
+     */
     function buildDiff(infoPaths) {
         var originIndex = 0;
         var diffQueue = [];
@@ -148,6 +179,11 @@ function lcsDiff(o, n) {
         return diffQueue;
     }
 
+    /**
+     * @description 把生成的差异数组中符合一定条件的相邻项进行合并,同newChunk中的concatDiffBlock,合并相邻 数组或相邻字符
+     * @param {array} diffQueue 基本差异数组,还没有优化过
+     * @return {array} sequence 优化完成的数组
+     */
     function concatDiff(diffQueue) {
         var countIndex     = 0;
         var lastMatchIndex = -2;
@@ -165,7 +201,7 @@ function lcsDiff(o, n) {
                     sequence.push( [ matchIndex, countIndex ] );
                 }
                 countIndex = 0;
-                
+
                 //记录字串
                 preChar += d;
                 countChar ++;
@@ -185,7 +221,7 @@ function lcsDiff(o, n) {
                     }
                     countIndex = 0;
                 }
-                if ( !countIndex ) 
+                if ( !countIndex )
                     matchIndex = d[ 0 ];
                 lastMatchIndex = d[ 0 ];
                 countIndex ++;

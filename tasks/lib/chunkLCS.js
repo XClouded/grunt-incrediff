@@ -5,6 +5,13 @@ module.exports = algoWrap;
 algoWrap.merge = mergeDiff;
 
 'use strict';
+
+/**
+ * @description 对外调用做的一个包裹函数,添加了 diff, chunkSize 等通用属性(后来做了点数组优化,增加一个合并小块的过程)
+ * @param {string} o 源字符串
+ * @param {string} n 新字符串
+ * @return {object} 差异数据对象
+ */
 function algoWrap (o, n) {
     var ret = ChunkLCS( 100, 0, o, n );
     var diffSequence = {'hash':[],'diff':[], chunkSize: 1};
@@ -13,6 +20,13 @@ function algoWrap (o, n) {
     return diffSequence;
 }
 
+/**
+ * @description 递归调用的主函数,进入后,先试用chunk算法分出 最(较大,非绝对最大)大公共字串,及其前缀和后缀,然后对其前缀和后缀字符串递归调用该函数
+ * @param {number} lcsLimit 执行lcs算法的阀值
+ * @param {number} preStart 递归调用时指明后缀的开始位置
+ * @param {object} arguments[2] 分情况，1个的话 是 chunkSplit生成的对象，2个的话是2个一旧一新的字符串
+ * @return {object} 指定块的差异数据对象
+ */
 function ChunkLCS(lcsLimit, preStart) {
     var o, n;
     var arg = arguments;
@@ -66,15 +80,23 @@ function ChunkLCS(lcsLimit, preStart) {
 
 }
 
-//统一调用
+//调用chunk算法计算的封装
 function getChunkDiff(o, n, chunkSize) {
     return chunkFunc( o, n, chunkSize, true ).diff;
 }
 
+//调用lcs算法计算的封装
 function getLcsDiff(o, n) {
     return lcsFunc( o, n ).diff;
 }
 
+/**
+ * @description 对指定的 源数据块o，和 新数据块n，执行最(较)大公共块计算,并返回含有前缀,公共,后缀信息的对象
+ * @param {string} o 源数据'块'
+ * @param {string} n 新数据'块'
+ * @param {number} preStart 递归调用时指明后缀的开始位置
+ * @return {object} splitInfo 分隔之后的信息
+ */
 function chunkSplit(o, n, preStart) {
 
     var minChunkSize = 12;
@@ -135,7 +157,13 @@ function chunkSplit(o, n, preStart) {
 
 }
 
-
+/**
+ * @description lcs算法适配器，需要适配 preStart的预制数，必须加上，否则会错乱
+ * @param {string} o 源数据'块'
+ * @param {string} n 新数据'块'
+ * @param {number} preStart 递归调用时指明后缀的开始位置
+ * @return {object} lcsDiff 经过preStart修正的 差异数据
+ */
 function lcsAdapter(o, n, preStart) {
     var lcsDiff = getLcsDiff(o, n);
     var lcsBlock;
@@ -150,6 +178,12 @@ function lcsAdapter(o, n, preStart) {
 }
 
 //把2个差异合并， 考虑队末队首相连
+/**
+ * @description 由于chunkSplit进行了前中后的拆分，这是重新组装的函数，并且要考虑两个差分数组拼接时连接处是否可以合并的问题
+ * @param {object} source 被组装的前面部分
+ * @param {object} addition 被组装的后面部分
+ * @return {object} source 组装好的结果
+ */
 function mergeBlock(source, addition) {
     var sLen = source.length;
     var aLen = addition.length;
@@ -189,6 +223,12 @@ function mergeBlock(source, addition) {
 }
 
 //把lcs之后长度小于4的块都处理成字符
+/**
+ * @description 后期发现的一个问题, 本算法能精确到字节级别,那么即chunkSize分块大小===1,所以后期会出现好多[123123,1],这代表了源字符串的一个字符，却要占用10个左右的字节进行表示，对这种情况，直接插入字符，节省差异数据
+ * @param {object} diff 差异对象
+ * @param {string} o 源字符串，从中取需要的
+ * @return {object} newDiff 新差异对象，优化之后的
+ */
 function miniLcsBlock(diff, o) {
     var newDiff = [];
     var i, len, d;
