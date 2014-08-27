@@ -39,7 +39,6 @@ function ChunkLCS(lcsLimit, preStart) {
     //RSYync分块
     var chunked = chunkSplit( o, n, preStart );
     var resultBlock = [];
-
     //分不了块？
     if ( chunked.noFound ) {
         return lcsAdapter( o, n, preStart );
@@ -140,7 +139,6 @@ function chunkSplit(o, n, preStart) {
 function lcsAdapter(o, n, preStart) {
     var lcsDiff = getLcsDiff(o, n);
     var lcsBlock;
-
     for ( var i = 0, len = lcsDiff.length ; i < len ; i ++ ) {
         lcsBlock = lcsDiff[ i ];
         if ( typeof lcsBlock !== 'string' ) {
@@ -227,7 +225,9 @@ function concatDiffBlock(diff, seq, noIndex) {
             seq.diff.push( d );
         }
     }
-
+    if ( preStr.length ) {
+        seq.diff.push( preStr );
+    }
 }
 
 
@@ -256,13 +256,14 @@ function mergeDiff(o, chunkSize,  diff) {
 // var origin = fs.readFileSync('app_all.min.1.3.61.css','utf8')
 // var newstr = fs.readFileSync('app_all.min.1.3.7.css','utf8')
 
-// // var origin = "123456789";
-// // var newstr = "3xad567890";
+// var origin = "123456789";
+// var newstr = "3xad567890";
 
 // var bt = (new Date()).getTime();
 // var result =algoWrap( origin, newstr )
 // var et = (new Date()).getTime();
 
+// console.log(result)
 // console.log(et-bt, JSON.stringify(result).length)
 // console.log( newstr=== mergeDiff(origin,1,result) )
 

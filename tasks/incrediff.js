@@ -94,6 +94,8 @@ module.exports = function(grunt) {
                 diff = require('./lib/chunkLCS');
                 break;
         }
+        var diffChunk = require('./lib/newChunk');
+        var diffChunkLCS = require('./lib/chunkLCS');
 
         if ( !options.dest || !options.newsrc || !options.cdnUrl ){
             grunt.log.warn('config need [DEST],[NEWSRC],[CDNURL]');
@@ -211,14 +213,47 @@ module.exports = function(grunt) {
                 OLDVERSION: oldver,
                 NEWVERSION: _versions[0]
             } );
-
-            var content = diff(olddata, newdata, options.chunkSize, options.isHashStr);
-            if ( diff.merge(olddata, options.chunkSize, content) !== newdata ) {
-                grunt.log.error('差异数据计算出错,可能是算法有问题,请修改algorithm配置项: ' + path + ' ' + oldver +'->' + _versions[0]);
+            var content;
+            var algoText;
+            var mergeChunk, mergeChunkLCS, contentChunk, contentChunkLCS;
+            if ( options.algorithm !== 'auto' ) {
+                content = diff(olddata, newdata, options.chunkSize, options.isHashStr);
+                algoText = options.algorithm;
+                if ( diff.merge(olddata, options.chunkSize, content) !== newdata ) {
+                    grunt.fail.fatal('差异数据计算出错,可能是算法有问题,请修改algorithm配置项: '+ options.algorithm + path + ' ' + oldver +'->' + _versions[0]);
+                }
             }
+            else {
+                contentChunk = diffChunk(olddata, newdata, options.chunkSize, options.isHashStr);
+                contentChunkLCS = diffChunkLCS(olddata, newdata, options.chunkSize, options.isHashStr);
+                mergeChunk = diffChunk.merge(olddata, options.chunkSize, contentChunk) === newdata;
+                mergeChunkLCS = diffChunkLCS.merge(olddata, options.chunkSize, contentChunkLCS) === newdata;
+                if ( mergeChunk && mergeChunkLCS ) {
+                    if ( JSON.stringify(contentChunk).length < JSON.stringify(contentChunkLCS).length ) {
+                        content = contentChunk;
+                        algoText = 'chunk';
+                    }
+                    else {
+                        content = contentChunkLCS;
+                        algoText = 'chunklcs';
+                    }
+                }
+                else if ( mergeChunk ) {
+                    content = contentChunk;
+                    algoText = 'chunk';
+                }
+                else if ( mergeChunkLCS ) {
+                    content = contentChunkLCS;
+                    algoText = 'chunklcs';
+                }
+                else {
+                    grunt.fail.fatal('差异数据计算出错,可能是算法有问题,请修改algorithm配置项: '+ options.algorithm + path + ' ' + oldver +'->' + _versions[0]);
+                }
+            }
+
             var writeContent = JSON.stringify( content ) + '/*"""*/';
             grunt.file.write(writePath, writeContent, 'utf8');
-            grunt.log.warn('DiffData '+ chalk.cyan(writePath) + ' created: ' + maxmin(newdata, writeContent, false)  );
+            grunt.log.warn('DiffData '+ algoText +' ' +chalk.cyan(writePath) + ' created: ' + maxmin(newdata, writeContent, false)  );
         }
 
         /**
