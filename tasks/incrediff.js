@@ -198,6 +198,13 @@ module.exports = function(grunt) {
                 done(err);
             });
 
+        /**
+         * @description 根据输入新旧数据源计算差异，并存储到指定位置
+         * @param {string} newdata 新数据源
+         * @param {string} olddata旧数据源
+         * @param {string} oldver 旧版本号
+         * @param {string} path 存储路径
+         */
         function generateDiffData ( newdata, olddata, oldver, path) {
             var writePath = options.dest + strFormat( options.format, {
                 FILEPATH: path,
@@ -214,6 +221,11 @@ module.exports = function(grunt) {
             grunt.log.warn('DiffData '+ chalk.cyan(writePath) + ' created: ' + maxmin(newdata, writeContent, false)  );
         }
 
+        /**
+         * @description 根据输入数据源生成全量数据，并存储到指定位置，(考虑到所有文件,包括CSS和JS能被combo在一起,必须要做一定处理,让本地接收时能够分离成单个文件)
+         * @param {string} 数据内容
+         * @param {string} path 存储路径
+         */
         function generateFullData ( content, path ) {
             var writePath = options.dest + strFormat( options.format, {
                 FILEPATH: path,
