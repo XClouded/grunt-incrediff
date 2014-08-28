@@ -112,6 +112,7 @@ GruntFiles.js
 	-	文件中最终内容示例
 		-	URL: http://g.assets.daily.taobao.net/dd/h5/1.3.772/js/app/app_all.js_1.3.771_1.3.772.js
 		-	`{"hash":[],"diff":[[0,115765],[115796,673],";console.log(\"进入1.3.772 静态渲染方法\");var ",[116470,105278]],"chunkSize":1}/*"""*/`
+		
 ### 单独调用
 
 #### 1. chunk 算法
