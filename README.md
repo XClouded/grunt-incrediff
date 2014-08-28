@@ -87,11 +87,35 @@ GruntFiles.js
 3. 本地执行 `grunt incrediff` / 服务端自动 `grunt` 时会生成到指定目录
 4. **增加差异输出强校验，会对差异进行一次合并测试，如果合并测试失败则grunt会fail(如果算法某些点没测试到可能报错)**
 
+### 差异数据文件格式
 
+1.	默认文件命名 `format: '%{FILEPATH}_%{OLDVERSION}_%{NEWVERSION}.js'`,即生成 `path/to/file.ext_1.0.0_1.0.1.js` 文件
+2.	文件中的内容
+	-	差异数据 `var data = {hash: (Array), diff: (Array), chunkSize: (Number)};`
+		-	示例 
+			-	`originStr = '1234567u'`
+			-	`targetStr = '12abc567u'`
+			-	`{hash: ['abc'], diff: [ [0,1], [0], [2,2] ], chunkSize: 2}`
+		-	`data.hash` 表示 可以把 `data.diff` 中的重复字符串存到 `data.hash` 数组中节省空间(可选)
+		-	`data.diff` **表示 有3种结构，按以下解释，依次连接起来即能生成 `targetStr`**
+			-	`[x, y]`	 : 表示 `originStr.substr( x * data.chunkSize, y * data.chunkSize );`
+			-	`[i]`		 : 表示 `data.hash[i]`
+			-	`'string'` : 表示 字符串
+		-	`data.chunkSize` 表示 分块大小，`chunk`算法默认为**20** / `chunklcs`算法默认为**1**
+	-	对差异数据进行以下操作
+		-	**`var write = JSON.stringify( data ) + '/*"""*/';`**
+		-	`fs.writeSync(pathto, write, 'utf8');`
+		-	执行此操作的原因：
+			-	为了考虑到把文件放在CDN上，让多个文件能被combo下载后在客户端能正常分割开
+			-	需要对每个差异文件标记分隔符 **`/*"""*/`** (考虑css和js会被一次combo起来)
+			-	由于JSON.stringify处理后 形如`"`,`\`等字符会被转义处理, 因此 分隔符 **`/*"""*/`**在理论上并不会在 data的转义序列中出现, 不会出现本地误识别的情况
+	-	文件中最终内容示例
+		-	URL: http://g.assets.daily.taobao.net/dd/h5/1.3.772/js/app/app_all.js_1.3.771_1.3.772.js
+		-	`{"hash":[],"diff":[[0,115765],[115796,673],";console.log(\"进入1.3.772 静态渲染方法\");var ",[116470,105278]],"chunkSize":1}/*"""*/`
 ### 单独调用
 
 #### 1. chunk 算法
-> 
+
 > 	var diff = require('./tasks/lib/newChunk');
 > 	var oldS = '1234567890';
 > 	var newS = '12345678toString90';
@@ -103,9 +127,9 @@ GruntFiles.js
 > **合并差异**
 > 
 > 	var m = diff.merge(oldS, null /*若d不带chunkSize可以外部输入*/, d)
-> 
+
 #### 2. chunkLcs 算法
-> 
+
 > 	var diff = require('./tasks/lib/chunkLCS');
 > 	var oldS = '1234567890';
 > 	var newS = '12345678toString90';
@@ -120,7 +144,8 @@ GruntFiles.js
 > 
 
 ## 代码文档
-**其实啊...直接去看代码最好...算法都写在那里...**
+**其实啊...直接去看代码最好...算法都写在那里...**  
+**以下内容为代码实现逻辑，当发现bug/需要修改代码逻辑的时候可以参考一下**
 
 ### 目录说明
 
